@@ -104,7 +104,7 @@ app.listen(3000,function(){
 >
 > `src/containers/Home/index.js`: 项目第一个组件，用于展示初始化页面
 
-![image-20200917202932212](/Users/maxiaofei/myGit/React-Service-Render/image-20200917202932212.png)
+![image-20200917202932212](./React服务端渲染.assets/image-20200917202932212.png)
 
 ### 2.2 package.json文件
 
@@ -245,7 +245,9 @@ export default Home
 
 打开浏览器访问：`localhost:3000`，出现以下页面即运行成功，可以修改 `src/Home/index.js` 文件中的内容并保存，刷新浏览器检查文件修改是否被监听，刷新浏览器页面更新即证明监听成功
 
-![image-20200917205433196](/Users/maxiaofei/myGit/React-Service-Render/image-20200917205433196.png)
+![image-20200917205433196](./React服务端渲染.assets/image-20200917205433196.png)
 
 ### 2.7 项目完整源码
+
+[点击前往下载:service-render-01](https://github.com/mapengfei47/React-Service-Render)
 
