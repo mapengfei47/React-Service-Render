@@ -39,7 +39,7 @@ app.listen(3000,function(){
 
 在命令行运行 `node app.js`,在浏览器通过 `localhost:3000` 访问。然后我们通过调试工具看一下源代码
 
-![image-20200915211735783](/Users/maxiaofei/Desktop/Web/React/React-Service-Render/React服务端渲染.assets/image-20200915211735783.png)
+![image-20200915211735783](./React服务端渲染.assets/image-20200915211735783.png)
 
 可以看到，页面展示的内容在源代码中完全的呈现出来，这说明服务器返回给浏览器的就是完整的Html文件，浏览器只需要将其渲染出来即可
 
@@ -49,7 +49,7 @@ app.listen(3000,function(){
 
 通过 `create-react-app` 创建的React项目就是客户端渲染，来看一下跟上面的服务端渲染有什么不一样
 
-![image-20200915214202109](/Users/maxiaofei/Desktop/Web/React/React-Service-Render/React服务端渲染.assets/image-20200915214202109.png)
+![image-20200915214202109](./React服务端渲染.assets/image-20200915214202109.png)
 
 查看源代码的时候，可以发现，`body` 标签中只有一个id为root的div，然后通过 `bundle.js` 文件来组装DOM，然后插入到root中
 
@@ -74,7 +74,7 @@ app.listen(3000,function(){
 
 ### 1.4 客户端渲染和服务端渲染的本质区别
 
-![Snipaste_2020-09-15_13-59-57](/Users/maxiaofei/Desktop/Web/React/React-Service-Render/React服务端渲染.assets/Snipaste_2020-09-15_13-59-57-0178144.png)
+![image-20200915214202109](./React服务端渲染.assets/Snipaste_2020-09-15_13-59-57.png)
 
 **本质区别：**本质区别是由谁来完成HTML完整拼接，服务端渲染是在服务器生成DOM树，客户端渲染是在客户端生成DOM树
 
