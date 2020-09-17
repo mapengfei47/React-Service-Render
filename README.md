@@ -86,3 +86,166 @@ app.listen(3000,function(){
 
 **直观的区分客户端渲染和服务端渲染：**网页源码里面可以直接看到网页内容的是服务端渲染，否则，就是客户端渲染，通过bundle.js文件来进行页面渲染
 
+
+
+## 二. 项目工程化
+
+### 2.1 项目目录
+
+**新建项目目录 `service-render-01`,项目结构如下**
+
+> `webpack.server.js`: webpack 打包配置文件
+>
+> `.gitignore`: git操作提交的时候忽略上传的配置
+>
+> `package.json`: node项目配置
+>
+> `src>index.js`: 项目入口文件，用于写服务端代码
+>
+> `src/containers/Home/index.js`: 项目第一个组件，用于展示初始化页面
+
+![image-20200917202932212](/Users/maxiaofei/myGit/React-Service-Render/image-20200917202932212.png)
+
+### 2.2 package.json文件
+
+> 对于经验不够丰富的开发者而言，package.json文件的配置是很容易对项目运行产生报错的，因为存在很多node插件版本冲突问题
+>
+> 所以这里先给出一套具体版本的安装包，如果想自己配置相关插件版本，可能会存在一些版本兼容性问题，请自行到  [stackoverflow](https://stackoverflow.com/questions) 寻找解决方案
+
+~~~js
+{
+  "name": "ServerRenderDemo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npm-run-all --parallel dev:**",
+    "dev:start": "nodemon --watch build --exec node './build/bundle.js'",
+    "dev:build": "webpack --config webpack.server.js --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "babel-core": "6.26.3",
+    "babel-loader": "7.1.5",
+    "babel-preset-env": "1.7.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-react": "6.24.1",
+    "babel-preset-stage-0": "6.24.1",
+    "express": "4.16.3",
+    "react": "16.4.1",
+    "react-dom": "^16.13.1",
+    "webpack": "4.16.0",
+    "webpack-node-externals": "1.7.2"
+  },
+  "devDependencies": {
+    "webpack-cli": "3.0.8"
+  }
+}
+
+~~~
+
+### 2.3 入口文件
+
+**src/index.js**
+
+~~~js
+import express from 'express'
+import React from 'react'
+import { renderToString } from 'react-dom/server'
+import Home from './containers/Home'
+
+const app = express()
+const content = renderToString(<Home />)
+
+app.get('/',(req,res) => {
+    res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SSR Demo</title>
+    </head>
+    <body>
+        ${content}
+    </body>
+    </html>
+    `)
+})
+
+app.listen(3000,function(){
+    console.log('Server running on localhost:3000...')
+})
+~~~
+
+### 2.4 webpack配置文件
+
+**webpack.server.js**
+
+~~~js
+const path = require('path')
+const nodeExternals = require('webpack-node-externals')
+
+module.exports = {
+    // 指定执行目标环境
+    target: 'node',
+    // 指定运行模式
+    mode: 'development',
+    // webpack打包入口文件
+    entry: './src/index.js',
+    // webpack打包生成文件名及目录
+    output: {
+        filename: 'bundle.js',
+        path: path.resolve(__dirname,'./build')
+    },
+    externals : [nodeExternals()],
+
+    // 配置js文件解析规则，ES6转化，react代码识别
+    module: {
+        rules: [
+            {
+                test: /\.js?$/,
+                loader:'babel-loader',
+                exclude: /node_modules/,
+                options: {
+                    presets: ['react','stage-0',['env',{
+                        targets: {
+                            browsers: ['last 2 versions']
+                        }
+                    }]]
+                }
+            }
+        ]
+    }
+}
+~~~
+
+### 2.5 首个页面
+
+~~~js
+import React from 'react'
+
+const Home = () =>{
+    return (<div>Welcome to Home--可修改内容测试</div>)
+}
+
+export default Home
+~~~
+
+### 2.6 运行项目
+
+> 以上代码准备就绪之后就可以安装依赖，打包，运行了
+
+- **安装依赖**：进入项目根目录，`yarn add` 或者 `cnpm install`
+- **执行打包命令**：`npm run dev:build`
+- **开启服务器并监听文件修改和打包**：`npm run dev`
+
+打开浏览器访问：`localhost:3000`，出现以下页面即运行成功，可以修改 `src/Home/index.js` 文件中的内容并保存，刷新浏览器检查文件修改是否被监听，刷新浏览器页面更新即证明监听成功
+
+![image-20200917205433196](/Users/maxiaofei/myGit/React-Service-Render/image-20200917205433196.png)
+
+### 2.7 项目完整源码
+
