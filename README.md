@@ -436,7 +436,11 @@ module.exports = webpackMerge.merge(config,serverConfig)
 
 ![image-20200920143314505](./React服务端渲染.assets/image-20200920143314505.png)
 
-### 3.4 总结
+### 3.4 项目完整代码
+
+[点击前往下载:service-render-02](https://github.com/mapengfei47/React-Service-Render)
+
+### 3.5 总结
 
 1. 同构就是将同样一套代码，在服务端执行一次（提升首屏渲染速度，更好的SEO），在客户端再执行一次（绑定事件）
 2. 同构渲染流程如下
