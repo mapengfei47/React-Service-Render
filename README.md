@@ -251,3 +251,195 @@ export default Home
 
 [点击前往下载:service-render-01](https://github.com/mapengfei47/React-Service-Render)
 
+
+
+## 三. 项目同构
+
+> **同构**：同样一套代码，在服务端执行一遍，在客户端也执行一遍
+
+### 3.1 存在问题
+
+在上述项目里面，我们修改一下 `home` 组件，在 `home` 组件中添加一个按钮，并且为按钮绑定一个事件
+
+~~~js
+// Home/index.js
+import React from 'react'
+
+const Home = () =>{
+    return (<div>
+        <h1>Welcome to React 同构</h1>
+        <button onClick={() => alert('同构成功')}>Click Me</button>
+    </div>)
+}
+
+export default Home
+~~~
+
+然后运行项目，会发现，按钮虽然已经展示出来，但是绑定的事件并没有生效
+
+**问题说明：** 服务端运行生成的HTML返回给客户端的时候，元素绑定的事件是不生效的，服务端渲染出来的内容，不会带事件绑定
+
+### 3.2 同构流程
+
+针对上面提出的问题，我们通过同构来解决该问题，同构原理流程如下
+
+![image-20200920140633104](./React服务端渲染.assets/image-20200920140633104.png)
+
+在上面项目工程化的介绍中，同构步骤的1，2，3步其实已经完成了，接下来看一下4，5，6步怎么做
+
+### 3.3 同构实现
+
+**1. 浏览器加载JS文件**
+
+- 要想浏览器加载j s文件，我们直接在服务器端完成渲染，返回给浏览器的 `html` 代码中插入一个 `<script>标签即可`
+- 在模版字符串中新增了 `<div id='root'></div>` 包裹服务端返回的HTML，后面通过 `ReactDOM.render()` 绑定到该节点上面去
+
+~~~js
+// server/index.js
+import express from 'express'
+import React from 'react'
+import { renderToString } from 'react-dom/server'
+import Home from '../containers/Home'
+
+const app = express()
+const content = renderToString(<Home />)
+// 指定静态文件，页面中加载的静态文件会去该目录下面查找
+app.use(express.static('public'))
+
+app.get('/',(req,res) => {
+    res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SSR Demo</title>
+    </head>
+    <body>
+        <div id='root'>${content}</div>
+        <script src='./index.js'></script>
+    </body>
+    </html>
+    `)
+})
+
+app.listen(3000,function(){
+    console.log('Server running on localhost:3000...')
+})
+~~~
+
+**2. 加载的JS文件**
+
+~~~js
+// src/client/index.js
+import React from 'react'
+import ReactDOM from 'react-dom'
+import Home from '../containers/Home'
+
+ReactDOM.hydrate(<Home />,document.getElementById('root'))
+~~~
+
+**3. webpack打包配置**
+
+在这里直接优化一下 `webpack` 打包配置
+
+- 将客户端打包配置，服务端打包配置，通用配置分别提取出来，通过 `webpack-merge` 分别在客户端配置和服务端配置中合并通用配置
+- 💡注意：要先安装 `webpack-merge` 第三方包，在旧包中，该模块直接返回 `merge` 函数可以直接调用，在新包中，返回一个对象，通过这个对象去调用 `merge` 函数
+
+~~~js
+//webpack.base.js
+module.exports = {
+    // 配置js文件解析规则，ES6转化，react代码识别
+    module: {
+        rules: [
+            {
+                test: /\.js?$/,
+                loader:'babel-loader',
+                exclude: /node_modules/,
+                options: {
+                    presets: ['react','stage-0',['env',{
+                        targets: {
+                            browsers: ['last 2 versions']
+                        }
+                    }]]
+                }
+            }
+        ]
+    }
+}
+~~~
+
+~~~js
+// webpack.client.js
+const path = require('path')
+const webpackMerge = require('webpack-merge')
+const config = require('./webpack.base')
+
+let clientConfig = {
+    // 指定运行模式
+    mode: 'development',
+    // webpack客户端打包入口文件
+    entry: './src/client/index.js',
+    // webpack打包生成文件名及目录
+    output: {
+        filename: 'index.js',
+        path: path.resolve(__dirname,'./public')
+    },
+}
+
+module.exports = webpackMerge.merge(config ,clientConfig)
+~~~
+
+~~~js
+// webpack.server.js
+const path = require('path')
+const nodeExternals = require('webpack-node-externals')
+const webpackMerge = require('webpack-merge')
+const config = require('./webpack.base')
+
+let serverConfig = {
+    // 指定执行目标环境
+    target: 'node',
+    // 指定运行模式
+    mode: 'development',
+    // webpack打包入口文件
+    entry: './src/server/index.js',
+    // webpack打包生成文件名及目录
+    output: {
+        filename: 'bundle.js',
+        path: path.resolve(__dirname,'./build')
+    },
+    externals : [nodeExternals()],
+}
+
+module.exports = webpackMerge.merge(config,serverConfig)
+~~~
+
+**4. 修改package.json的script**
+
+~~~json
+{
+  ...
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:**",
+    "dev:build:server": "webpack --config webpack.server.js --watch",
+    "dev:build:client": "webpack --config webpack.client.js --watch",
+    "dev:start": "nodemon --watch build --exec node ./build/bundle.js"
+  },
+  ...
+}
+~~~
+
+**5. 重新运行即可**
+
+点击按钮，浏览器弹出弹框，同构成功
+
+![image-20200920143314505](./React服务端渲染.assets/image-20200920143314505.png)
+
+### 3.4 总结
+
+1. 同构就是将同样一套代码，在服务端执行一次（提升首屏渲染速度，更好的SEO），在客户端再执行一次（绑定事件）
+2. 同构渲染流程如下
+   - 服务器运行React代码，并将React代码渲染成HTML返回给浏览器，浏览器接收到HTML直接渲染，此时渲染已经完成
+   - 浏览器渲染完成HTML之后，加载JS文件，此时页面的操作权又回到React手上，React将绑定事件之后的完整HTML替换到 root 标签内，同构完成
+

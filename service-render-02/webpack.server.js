@@ -1,30 +1,21 @@
 const path = require('path')
 const nodeExternals = require('webpack-node-externals')
+const webpackMerge = require('webpack-merge')
+const config = require('./webpack.base')
 
-module.exports = {
+let serverConfig = {
+    // 指定执行目标环境
     target: 'node',
+    // 指定运行模式
     mode: 'development',
-    entry: './src/index.js',
+    // webpack打包入口文件
+    entry: './src/server/index.js',
+    // webpack打包生成文件名及目录
     output: {
         filename: 'bundle.js',
         path: path.resolve(__dirname,'./build')
     },
     externals : [nodeExternals()],
-
-    module: {
-        rules: [
-            {
-                test: /\.js?$/,
-                loader:'babel-loader',
-                exclude: /node_modules/,
-                options: {
-                    presets: ['react','stage-0',['env',{
-                        targets: {
-                            browsers: ['last 2 versions']
-                        }
-                    }]]
-                }
-            }
-        ]
-    }
 }
+
+module.exports = webpackMerge.merge(config,serverConfig)
