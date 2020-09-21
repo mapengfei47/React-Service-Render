@@ -447,3 +447,169 @@ module.exports = webpackMerge.merge(config,serverConfig)
    - 服务器运行React代码，并将React代码渲染成HTML返回给浏览器，浏览器接收到HTML直接渲染，此时渲染已经完成
    - 浏览器渲染完成HTML之后，加载JS文件，此时页面的操作权又回到React手上，React将绑定事件之后的完整HTML替换到 root 标签内，同构完成
 
+
+
+## 四. 服务端渲染中的路由
+
+> 在服务端渲染中使用路由，也需要在服务端运行一次，在客户端再运行一次
+
+### 4.1 安装
+
+~~~js
+npm install react-router-dom -S
+~~~
+
+### 4.2 路由配置
+
+1. 在 `src` 目录下新增 `Routes/index.js` 文件
+
+~~~js
+// src/Routes/index.js
+import React from 'react'
+import { Route } from 'react-router-dom'
+import Home from './containers/Home'
+import Login from './containers/Login'
+
+export default (
+    <div>
+        <Route path="/" exact component={Home}></Route>
+        <Route path="/login" component={Login}></Route>
+    </div>
+)
+~~~
+
+2. 客户端运行的路由配置
+
+**注意：** 客户端使用的是 `BrowserRouter` 包裹路由配置，不同于服务端
+
+~~~js
+//src/client/index.js
+import React from 'react'
+import ReactDOM from 'react-dom'
+import { BrowserRouter } from 'react-router-dom'
+import Routes from '../Routes'
+const App = () =>{
+    return (
+        <BrowserRouter>
+            {Routes}
+        </BrowserRouter>
+    )
+}
+
+ReactDOM.hydrate(<App />,document.getElementById('root'))
+~~~
+
+3. 服务端运行的路由配置
+
+**注意：** 服务端使用的是 `StaticRouter` 包裹路由配置，不同于客户端。并且要接收 `locatoin` 和 `context` 两个参数，这里 `location` 是URL指向（服务端不同于客户端的点，客户端在浏览器可以直接获取URL得知跳转地址，而服务端必须通过参数传递），`context` 是上下文参数（后续会详细介绍）
+
+这里将 `src/server/index.js` 文件优化了一下，提取出工具类的方法 `render` 函数，路由的配置以及HTML的拼接全部放在 `render` 函数，直接返回给服务端完整的HTMl
+
+~~~js
+//src/server/index.js
+import express from 'express'
+import React from 'react'
+import { render } from './utils'
+
+
+const app = express()
+// 指定静态文件，页面中加载的静态文件会去该目录下面查找
+app.use(express.static('public'))
+
+app.get('*',(req,res) => {
+    res.send(render(req))
+})
+
+app.listen(3000,function(){
+    console.log('Server running on localhost:3000...')
+})
+~~~
+
+~~~js
+//src/server/utils.js
+
+import React from 'react'
+import { renderToString } from 'react-dom/server'
+import { StaticRouter } from 'react-router-dom'
+import Routes from '../Routes'
+
+export const render = (req) =>{
+
+    const content = renderToString((
+        <StaticRouter location={req.path} context={{}}>
+            {Routes}
+        </StaticRouter>
+    ))
+
+    let htmlStr = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>SSR Demo</title>
+        </head>
+        <body>
+            <div id='root'>${content}</div>
+            <script src='./index.js'></script>
+        </body>
+        </html>
+    `
+
+    return htmlStr;
+}
+~~~
+
+### 4.3 跳转链接Link
+
+完成上述步骤，我们可以重新打包运行项目，在浏览器输入 `localhost:3000/login` 和 `localhost:/3000` 分别可以看到不同的页面跳转，说明我们的路由配置成功。
+
+接下来，我们加上Link标签，指定跳转链接，就可以直接在页面上通过鼠标点击进行跳转了
+
+我们想让跳转的链接在每一个页面上都显示，所以这里我们声明一个公用Header组件，来让每一个页面直接引用
+
+~~~js
+//src/components/Header/index.js
+
+import React from 'react'
+import { Link } from 'react-router-dom'
+
+const Header = () =>{
+    return (<div>
+        <Link to="/">Home</Link>
+        <br />
+        <Link to="/login">Login</Link>
+    </div>)
+}
+
+export default Header
+~~~
+
+~~~js
+//src/containers/Home/index.js
+
+import React from 'react'
+import Header from '../../components/Header'
+
+const Home = () =>{
+    return (<div>
+        <Header />
+        <h1>Welcome to React 同构</h1>
+        <button onClick={() => alert('同构成功')}>Click Me</button>
+    </div>)
+}
+
+export default Home
+~~~
+
+Login页面同Home
+
+完成之后，重新打包运行
+
+![Cj9fKwkh3D](./React服务端渲染.assets/Cj9fKwkh3D.gif)
+
+### 4.4 项目完整代码
+
+[点击前往下载:service-render-03](https://github.com/mapengfei47/React-Service-Render)
+
+### 
