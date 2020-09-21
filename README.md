@@ -612,4 +612,11 @@ Login页面同Home
 
 [点击前往下载:service-render-03](https://github.com/mapengfei47/React-Service-Render)
 
-### 
+### 4.5 总结
+
+1. 在服务端渲染中使用路由，既要在服务端代码中配置路由，也要在客户端渲染中配置路由
+2. 客户端的路由配置和服务端的路由配置有一些区别
+   1. 客户端路由：客户端路由直接通过 `BrowserRouter` 包裹路由配置返回的路由配置即可
+   2. 服务端路由：服务端路由要使用 `StaticRouter` 包裹路由配置返回的路由，同时要添加 `location` 和 `context` 属性，分别用来指定跳转页面地址和上下文传参对象
+3. 通过 `Link` 标签，配置 `to` 属性可以定义跳转路由
+
